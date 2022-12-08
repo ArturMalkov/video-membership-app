@@ -24,5 +24,11 @@ def on_shutdown():
     pass
 
 
+@app.get("/users")
+def list_users():
+    query_set = User.objects.all().limit(10)
+    return list(query_set)
+
+
 if __name__ == "__main__":
     uvicorn.run("app.main:app", reload=True)
