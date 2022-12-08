@@ -4,6 +4,7 @@ from cassandra.cqlengine import columns
 from cassandra.cqlengine.models import Model
 
 from app import config
+from app.users import validators
 
 
 settings = config.get_settings()
@@ -18,3 +19,19 @@ class User(Model):
 
     def __repr__(self):
         return f"<{self.__class__.__name__}(email={self.email}, user_id={self.user_id})>"
+
+    @staticmethod
+    def create_user(email, password):
+        # check if email already exists in the database
+        query = User.objects.filter(email=email)  # possible in Cassandra since we set email to be a pk
+        if query.count() != 0:
+            raise Exception("User with this email is already registered.")
+
+        valid, message, email = validators.validate_email(email)
+        if not valid:
+            raise Exception(f"Invalid email: {message}")
+
+        user = User(email=email, password=password)
+        user.save()
+
+        return user

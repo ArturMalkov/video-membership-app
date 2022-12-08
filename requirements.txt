@@ -2,3 +2,5 @@ fastapi
 uvicorn  # async wsgi; waitress can be used as an option
 cassandra-driver
 python-dotenv
+email-validator
+argon2-cffi
