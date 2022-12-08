@@ -29,6 +29,11 @@ class User(Model):
 
         return True
 
+    def verify_password(self, entered_password):
+        password_hash = self.password
+        verified, _ = security.verify_hash(password_hash, entered_password)
+        return verified
+
     @staticmethod
     def create_user(email, password):
         # check if email already exists in the database
