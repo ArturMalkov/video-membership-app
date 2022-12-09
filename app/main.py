@@ -1,3 +1,4 @@
+import json
 import pathlib
 
 import uvicorn
@@ -5,9 +6,11 @@ from cassandra.cqlengine.management import sync_table
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from pydantic.error_wrappers import ValidationError
 
 from app import config, db
 from app.users.models import User
+from app.users.schemas import UserLoginSchema, UserSignupSchema
 
 
 BASE_DIR = pathlib.Path(__file__).resolve().parent
@@ -49,11 +52,12 @@ def login(request: Request):
 
 @app.post("/login", response_class=HTMLResponse)
 def login(request: Request, email: str = Form(...), password: str = Form(...)):
+    cleaned_data = UserLoginSchema(email=email, password=password)
     return templates.TemplateResponse("auth/login.html", context={"request": request})
 
 
 @app.get("/signup", response_class=HTMLResponse)
-def login(request: Request):
+def signup(request: Request):
     return templates.TemplateResponse("auth/signup.html", context={"request": request})
 
 
@@ -62,7 +66,23 @@ def signup(request: Request,
            email: str = Form(...),
            password: str = Form(...),
            password_confirm: str = Form(...)):
-    return templates.TemplateResponse("auth/login.html", context={"request": request})
+    data = {}
+    error_str = ""
+    try:
+        cleaned_data = UserSignupSchema(email=email, password=password, password_confirm=password_confirm)
+        data = cleaned_data.dict()
+    except ValidationError as err:
+        error_str = err.json()
+    try:
+        errors = json.loads(error_str)
+    except Exception:
+        errors = [{"loc": "non_field_error", "msg": "Unknown error"}]
+
+    return templates.TemplateResponse("auth/signup.html", context={
+        "request": request,
+        "data": data,
+        "errors": errors
+    })
 
 
 @app.get("/users")
