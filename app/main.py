@@ -2,7 +2,7 @@ import pathlib
 
 import uvicorn
 from cassandra.cqlengine.management import sync_table
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -40,6 +40,29 @@ def homepage(request: Request):
         "abc": 123
     }
     return templates.TemplateResponse("home.html", context=context)
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login(request: Request):
+    return templates.TemplateResponse("auth/login.html", context={"request": request})
+
+
+@app.post("/login", response_class=HTMLResponse)
+def login(request: Request, email: str = Form(...), password: str = Form(...)):
+    return templates.TemplateResponse("auth/login.html", context={"request": request})
+
+
+@app.get("/signup", response_class=HTMLResponse)
+def login(request: Request):
+    return templates.TemplateResponse("auth/signup.html", context={"request": request})
+
+
+@app.post("/signup", response_class=HTMLResponse)
+def signup(request: Request,
+           email: str = Form(...),
+           password: str = Form(...),
+           password_confirm: str = Form(...)):
+    return templates.TemplateResponse("auth/login.html", context={"request": request})
 
 
 @app.get("/users")
