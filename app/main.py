@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic.error_wrappers import ValidationError
 
-from app import config, db
+from app import config, db, utils
 from app.users.models import User
 from app.users.schemas import UserLoginSchema, UserSignupSchema
 
@@ -52,8 +52,13 @@ def login(request: Request):
 
 @app.post("/login", response_class=HTMLResponse)
 def login(request: Request, email: str = Form(...), password: str = Form(...)):
-    cleaned_data = UserLoginSchema(email=email, password=password)
-    return templates.TemplateResponse("auth/login.html", context={"request": request})
+    raw_data = {"email": email, "password": password}
+    data, errors = utils.valid_schema_data_or_error(raw_data, UserLoginSchema)
+    return templates.TemplateResponse("auth/login.html", context={
+        "request": request,
+        "data": data,
+        "errors": errors
+    })
 
 
 @app.get("/signup", response_class=HTMLResponse)
@@ -66,17 +71,8 @@ def signup(request: Request,
            email: str = Form(...),
            password: str = Form(...),
            password_confirm: str = Form(...)):
-    data = {}
-    error_str = ""
-    try:
-        cleaned_data = UserSignupSchema(email=email, password=password, password_confirm=password_confirm)
-        data = cleaned_data.dict()
-    except ValidationError as err:
-        error_str = err.json()
-    try:
-        errors = json.loads(error_str)
-    except Exception:
-        errors = [{"loc": "non_field_error", "msg": "Unknown error"}]
+    raw_data = {"email": email, "password": password, "password_confirm": password_confirm}
+    data, errors = utils.valid_schema_data_or_error(raw_data, UserSignupSchema)
 
     return templates.TemplateResponse("auth/signup.html", context={
         "request": request,
