@@ -1,12 +1,21 @@
+import pathlib
+
 import uvicorn
 from cassandra.cqlengine.management import sync_table
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 from app import config, db
 from app.users.models import User
 
 
+BASE_DIR = pathlib.Path(__file__).resolve().parent
+TEMPLATE_DIR = BASE_DIR / "templates"
+
 app = FastAPI()
+templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
+
 DB_SESSION = None
 settings = config.get_settings()
 
@@ -22,6 +31,15 @@ def on_startup():
 @app.on_event("shutdown")
 def on_shutdown():
     pass
+
+
+@app.get("/", response_class=HTMLResponse)
+def homepage(request: Request):
+    context = {
+        "request": request,  # required to use Jinja2
+        "abc": 123
+    }
+    return templates.TemplateResponse("home.html", context=context)
 
 
 @app.get("/users")

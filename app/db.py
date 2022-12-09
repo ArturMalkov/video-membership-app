@@ -7,7 +7,7 @@ from cassandra.cqlengine import connection
 from app import config
 
 
-BASE_DIR = pathlib.Path(__file__).resolve().parent  # absolute path of the parent directory (regardless of the system we're on)
+BASE_DIR = pathlib.Path(__file__).resolve().parent  # absolute path of the parent directory (regardless of the system we're on + cross-platform)
 
 settings = config.get_settings()
 ASTRADB_CONNECT_BUNDLE = BASE_DIR / "unencrypted" / "astradb_connect.zip"
