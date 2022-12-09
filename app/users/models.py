@@ -41,7 +41,7 @@ class User(Model):
         if query.count() != 0:
             raise Exception("User with this email is already registered.")
 
-        valid, message, email = validators.validate_email(email)
+        valid, message, email = validators._validate_email(email)
         if not valid:
             raise Exception(f"Invalid email: {message}")
 
