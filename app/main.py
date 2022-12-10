@@ -1,24 +1,14 @@
-import json
-import pathlib
-
 import uvicorn
 from cassandra.cqlengine.management import sync_table
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, Request, status
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from pydantic.error_wrappers import ValidationError
 
-from app import config, db, utils
+from app import config, db, utils, shortcuts
 from app.users.models import User
 from app.users.schemas import UserLoginSchema, UserSignupSchema
 
 
-BASE_DIR = pathlib.Path(__file__).resolve().parent
-TEMPLATE_DIR = BASE_DIR / "templates"
-
 app = FastAPI()
-templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
-
 DB_SESSION = None
 settings = config.get_settings()
 
@@ -42,28 +32,31 @@ def homepage(request: Request):
         "request": request,  # required to use Jinja2
         "abc": 123
     }
-    return templates.TemplateResponse("home.html", context=context)
+    return shortcuts.render(request, "home.html", context)
 
 
 @app.get("/login", response_class=HTMLResponse)
 def login(request: Request):
-    return templates.TemplateResponse("auth/login.html", context={"request": request})
+    return shortcuts.render(request, "auth/login.html", context={})
 
 
 @app.post("/login", response_class=HTMLResponse)
 def login(request: Request, email: str = Form(...), password: str = Form(...)):
     raw_data = {"email": email, "password": password}
     data, errors = utils.valid_schema_data_or_error(raw_data, UserLoginSchema)
-    return templates.TemplateResponse("auth/login.html", context={
-        "request": request,
-        "data": data,
-        "errors": errors
-    })
+    context = {
+            "data": data,
+            "errors": errors
+    }
+    if len(errors) > 0:
+        return shortcuts.render(request, "auth/login.html", context=context, status_code=status.HTTP_404_NOT_FOUND)
+
+    return shortcuts.render(request, "auth/login.html", context=context)
 
 
 @app.get("/signup", response_class=HTMLResponse)
 def signup(request: Request):
-    return templates.TemplateResponse("auth/signup.html", context={"request": request})
+    return shortcuts.render(request, "auth/signup.html", context={})
 
 
 @app.post("/signup", response_class=HTMLResponse)
@@ -73,12 +66,14 @@ def signup(request: Request,
            password_confirm: str = Form(...)):
     raw_data = {"email": email, "password": password, "password_confirm": password_confirm}
     data, errors = utils.valid_schema_data_or_error(raw_data, UserSignupSchema)
-
-    return templates.TemplateResponse("auth/signup.html", context={
-        "request": request,
+    context = {
         "data": data,
         "errors": errors
-    })
+    }
+    if len(errors) > 0:
+        return shortcuts.render(request, "auth/signup.html", context=context, status_code=status.HTTP_404_NOT_FOUND)
+
+    return shortcuts.render(request, "auth/signup.html", context)
 
 
 @app.get("/users")
